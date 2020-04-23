@@ -12,12 +12,11 @@ int main()
         int num_nodes, num_edges;
         read_graphs(files[i], num_nodes, num_edges, row_ptr, col_ind);
 
-        vector<vector<pair<int, float>>> orders(3, vector<pair<int, float>>(num_nodes));
-        degree_centrality(num_nodes, row_ptr, col_ind, orders[0]);
-        degree2_centrality(num_nodes, row_ptr, col_ind, orders[1]);
-        closeness_centrality(num_nodes, row_ptr, col_ind, orders[2]);
-
-        cout << "Orders for " << files[i] << " is calculated..." << endl;
+        vector<vector<float>> centralities;
+        vector<bool> to_calculate = {true, true, true, true};
+        compute_centralities(num_nodes, row_ptr, col_ind, centralities, to_calculate);
+        // print_centralities(files[i], centralities);
+        cout << "Completed: " << files[i] << endl;
     }
 
     return 0;

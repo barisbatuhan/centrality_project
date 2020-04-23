@@ -1,2 +1,9 @@
+# Runtime Files
 ./a.out
-./Graph/graph.h.gch
+Graph/graph.h.gch
+
+# Commands to Run
+makefile
+
+# IDE Files
+.vscode
