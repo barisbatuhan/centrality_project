@@ -5,7 +5,7 @@ int main(int argc, char **argv)
     vector<string> locations = {"./data/small/"}; 
     vector<string> files;
     get_filenames(files, locations);
-    omp_set_num_threads(atoi(argv[1]));
+    //omp_set_num_threads(atoi(argv[1]));
 
     double total_time = 0;
     for (int i = files.size() - 1; i < files.size(); i++)

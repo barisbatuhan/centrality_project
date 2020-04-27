@@ -266,7 +266,7 @@ void bfs(int start_node, int num_nodes, vector<int> row_ptr, vector<int> col_ind
 void degree_centrality(int num_nodes, const vector<int> &row_ptr, const vector<int> &col_ind, vector<pair<int, float>> &ordering)
 {
 	//	omp_set_num_threads(32);
-	#pragma omp parallel for num_threads(32) schedule(dynamic)
+	#pragma omp parallel for schedule(dynamic)
 	for (int v = 0; v < num_nodes; v++)
 	{
 		ordering[v] = make_pair(v, row_ptr[v + 1] - row_ptr[v]);
@@ -276,7 +276,7 @@ void degree_centrality(int num_nodes, const vector<int> &row_ptr, const vector<i
 void degree2_centrality(int num_nodes, const vector<int> &row_ptr, const vector<int> &col_ind, vector<pair<int, float>> &ordering)
 {
 	//	omp_set_num_threads(32);
-	#pragma omp parallel for num_threads(8) schedule(dynamic)
+	#pragma omp parallel for schedule(dynamic)
 	for (int v = 0; v < num_nodes; v++)
 	{
 		vector<int> dist_arr(num_nodes);
@@ -350,7 +350,7 @@ void closeness_centrality_approx(int num_nodes, const vector<int> &row_ptr, cons
 	}
 	vector<vector<int>> dist_arr(size, vector<int>(num_nodes));
 	//	omp_set_num_threads(32);
-	#pragma omp parallel for num_threads(32) schedule(dynamic)
+	#pragma omp parallel for schedule(dynamic)
 	for (int v = 0; v < size; v++)
 	{
 		//srand(1);
@@ -359,7 +359,7 @@ void closeness_centrality_approx(int num_nodes, const vector<int> &row_ptr, cons
 	}
 	#pragma omp barrier
 
-	#pragma omp parallel for num_threads(32)
+	#pragma omp parallel for
 	for (int v = 0; v < num_nodes; v++)
 	{
 		int sum_of_dist = 0;
