@@ -166,14 +166,13 @@ void compute_centralities(const int &num_nodes, const vector<int> &row_ptr, cons
 		vector<vector<int>> pred(num_nodes);	// for each node, its predecessors are held
 		vector<int> sigma(num_nodes, 0);		// number of shortest paths from s to the index
 		sigma[s] = 1;
-		vector<float> delta(num_nodes, 0);		// dependency of s to index node
 		
 		// for degree 1 centrality, value calculation
 		if(to_calculate[0]) result[0][s] = row_ptr[s + 1] - row_ptr[s];
 		// if check for eliminating extra calculation if only degree 1 is requested
 		if(!to_calculate[1] && !to_calculate[2] && !to_calculate[3]) continue;
 
-		while(front < queue.size()) {
+		while(front < queue.size()) {  // BFS Phase
 			int v = queue[front];
 			front++;
 			// if check for eliminating unnecessary computation if closeness and betweennes is not requested
@@ -197,27 +196,38 @@ void compute_centralities(const int &num_nodes, const vector<int> &row_ptr, cons
 		// for degree 2 centrality, value calculation 
 		if(to_calculate[1]) result[1][s] = dist2_counter;
 		// for closeness centrality, value calculation 
-		if(to_calculate[2]) {
-			int sum_of_dist = 0;
-			for(int &item: dist){
-				if(item != -1) sum_of_dist += item;
-			}
-			// int sum_of_dist = std::accumulate(dist.begin(), dist.end(), 0); // sum of d(v,x) for all x in the graph
-			result[2][s] = (float) 1 / sum_of_dist;
-		}
-
-		// if check for eliminating extra calculation if betweenness is not requested
-		if(!to_calculate[3]) continue;
-		for(int i = 0; i < queue.size(); i++) {
-			int w = queue[i];
-			for(int &v: pred[w]) {
-				# pragma omp critical
+		#pragma omp task shared(result, queue, dist)
+		{
+			if(to_calculate[2]) {
+				int sum_of_dist = 0;
+				for(int &item: dist){
+					if(item != -1) sum_of_dist += item;
+				}
+				#pragma omp critical 
 				{
-					delta[v] += (float) ((float) sigma[v] / sigma[w]) * (1 + delta[w]);
-					if(w != s) result[3][w] += delta[w];
+					result[2][s] = (float) 1 / sum_of_dist;
 				}
 			}
 		}
+
+		// if check for eliminating extra calculation if betweenness is not requested
+		#pragma omp task shared(result, queue, sigma, pred)
+		{
+			vector<float> delta(num_nodes, 0);		// dependency of s to index node
+			if(to_calculate[3]) {
+				for(int i = 0; i < queue.size(); i++) {
+					int w = queue[i];
+					for(int &v: pred[w]) {
+						# pragma omp critical
+						{
+							delta[v] += (float) ((float) sigma[v] / sigma[w]) * (1 + delta[w]);
+							if(w != s) result[3][w] += delta[w];
+						}
+					}
+				}
+			}
+		}
+		#pragma omp taskwait
 	}
 }
 
