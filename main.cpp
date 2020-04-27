@@ -1,11 +1,11 @@
 #include "./Graph/graph.h"
 
-int main()
+int main(int argc, char **argv)
 {
     vector<string> locations = {"./data/small/"}; 
     vector<string> files;
     get_filenames(files, locations);
-    omp_set_num_threads(12);
+    omp_set_num_threads(atoi(argv[1]));
 
     double total_time = 0;
     for (int i = files.size() - 1; i < files.size(); i++)
@@ -22,7 +22,8 @@ int main()
         print_centralities(files[i], centralities);
         // cout << "Completed: " << files[i] << endl;
     }
-    cout << "Total Time for " << files.size() << " graphs: " << total_time  << " sec. " << endl;
+    cout << "Num threads: " << omp_get_max_threads() 
+         << " - Total Time for " << files.size() << " graphs: " << total_time  << " sec. " << endl;
 
     return 0;
 }
