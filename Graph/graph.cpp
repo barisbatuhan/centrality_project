@@ -156,7 +156,6 @@ void compute_centralities(const int &num_nodes, const vector<int> &row_ptr, cons
 	// parameter initialization
 	result = vector<vector<float>>(4, vector<float>(num_nodes, 0));
 
-	#pragma omp parallel for shared(result, row_ptr, col_ind, to_calculate)
 	for(int s = 0; s < num_nodes; s++) {
 		vector<int> queue; 						// non-increasing order of nodes to be read will be hold
 		queue.push_back(s);
@@ -211,11 +210,8 @@ void compute_centralities(const int &num_nodes, const vector<int> &row_ptr, cons
 		for(int i = 0; i < queue.size(); i++) {
 			int w = queue[i];
 			for(int &v: pred[w]) {
-				# pragma omp critical
-				{
-					delta[v] += (float) ((float) sigma[v] / sigma[w]) * (1 + delta[w]);
-					if(w != s) result[3][w] += delta[w];
-				}
+				delta[v] += (float) ((float) sigma[v] / sigma[w]) * (1 + delta[w]);
+				if(w != s) result[3][w] += delta[w];
 			}
 		}
 	}
