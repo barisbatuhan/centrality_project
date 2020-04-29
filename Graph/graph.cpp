@@ -125,6 +125,92 @@ void print_centralities(string filename, vector<vector<float>> &result) {
 	}
 }
 
+void comp_cent(const int &num_nodes, const vector<int> &row_ptr, const vector<int> &col_ind, 
+			   vector<vector<float>> &result, const vector<bool> &to_calculate, int step_size) {
+	
+	// parameter initialization
+	result = vector<vector<float>>(4, vector<float>(num_nodes, 0));
+	#pragma omp parallel for shared(result, row_ptr, col_ind, to_calculate) schedule(guided)
+	for(int s = 0; s < num_nodes; s++) {
+		
+		/* PARAMETER INITIALIZATION */		
+		vector<int> queue; 					// vertices are held with non-decreasing distance to s		
+		vector<int> dist_cnt(num_nodes); 	// for each distance nuber of nodes are held
+		vector<int> dist(num_nodes, -1);	// for each distance, vector of vertices are held	
+		vector<int> sigma(num_nodes, 0); 	// number of shortest paths from s to the index
+		vector<vector<int>> pred(num_nodes, vector<int>(num_nodes, -1));
+		vector<int> pred_index(num_nodes, 0);
+		
+		queue.push_back(s);
+		int front = 0, queue_size = 1;
+		sigma[s] = 1;	
+		dist_cnt[0]++;
+		dist[s] = 0;
+
+		/* DEGREE 1 CALCULATION */
+		if(to_calculate[0]) result[0][s] = row_ptr[s + 1] - row_ptr[s];
+		
+		/* BFS */
+		while(front < queue_size) {
+			
+			int v = queue[front];
+			front++;
+
+			for(int edge = row_ptr[v]; edge < row_ptr[v + 1]; edge++) {
+				int w = col_ind[edge];
+				if(dist[w] == -1) {
+					queue.push_back(w);
+					queue_size++;
+					
+					dist[w] = dist[v] + 1;
+					dist_cnt[dist[w]]++;
+					
+					sigma[w] += sigma[v];
+				}
+				else if(dist[w] == dist[v] + 1) {
+					sigma[w] += sigma[v];
+				}
+			}
+		}
+
+		/* DEGREE 2 CALCULATION */
+		if(to_calculate[1]) result[1][s] = dist_cnt[2];
+
+		/* CLOSENESS CALCULATION */
+		if(to_calculate[2]) {
+			int sum = 0;
+			for(int level = 0; level < num_nodes; level++) {
+				if(dist_cnt[level] == 0) break;
+				sum += level * dist_cnt[level];
+			}
+			result[2][s] = (float) 1 / sum;
+		}
+
+		/* BETWEENNESS CALCULATION */
+		vector<float> delta(num_nodes, 0);		// dependency of s to index node
+		if(to_calculate[3]) {
+
+			for(int depth = max_dist - 1; depth > 0; depth--) {
+				vector<int> &level = dist2d[depth];
+				for(int &w: level) {
+					for(int edge = row_ptr[w]; edge < row_ptr[w + 1]; edge++) {
+						int v = col_ind[edge];
+						if(dist[v] + 1 == dist[w]) {
+							if(depth == max_dist - 1) cout << sigma[v] << " , " << sigma[w] << " , " << delta[w] << " == " << delta[v] << " - ";
+							delta[v] += (float) ((float) sigma[v] / sigma[w]) * (1 + delta[w]);
+							if(depth == max_dist - 1) cout << delta[v] << endl;
+						}
+					}
+					# pragma omp critical
+					{
+						result[3][w] += delta[w];
+					}
+				}
+			}
+		}
+	}
+}
+
 /**
  * num_nodes			: number of nodes in the graph
  * row_ptr and col_ind	: constant graph data holders
@@ -156,14 +242,15 @@ void compute_centralities(const int &num_nodes, const vector<int> &row_ptr, cons
 	// parameter initialization
 	result = vector<vector<float>>(4, vector<float>(num_nodes, 0));
 
-	#pragma omp parallel for shared(result, row_ptr, col_ind, to_calculate)
+	#pragma omp parallel for shared(result, row_ptr, col_ind, to_calculate) schedule(guided)
 	for(int s = 0; s < num_nodes; s++) {
 		vector<int> queue; 						// non-increasing order of nodes to be read will be hold
 		queue.push_back(s);
 		int front = 0;							// the index of last processed element will be hold
 		vector<int> dist(num_nodes, -1); 		// distances of all nodes to node s
 		int dist2_counter = 0;					// counts nodes with distances <= 2
-		vector<vector<int>> pred(num_nodes);	// for each node, its predecessors are held
+		// betweenness related
+		// vector<vector<int>> pred(num_nodes);	// for each node, its predecessors are held
 		vector<int> sigma(num_nodes, 0);		// number of shortest paths from s to the index
 		sigma[s] = 1;
 		
@@ -182,52 +269,54 @@ void compute_centralities(const int &num_nodes, const vector<int> &row_ptr, cons
 				int w = col_ind[edge];
 				// to calculate the distance of w to v
 				if(dist[w] < 0) {
+					queue.push_back(w);
 					dist[w] = dist[v] + 1;
 					if(dist[w] <= 2) dist2_counter++;
-					queue.push_back(w);
 				}
 				// to see if edge (v, w) in the shortest path
 				if(to_calculate[3] && dist[w] == dist[v] + 1) {
 					sigma[w] += sigma[v];
-					pred[w].push_back(v);
+					//pred[w].push_back(v);
 				}
 			}
 		}
 		// for degree 2 centrality, value calculation 
 		if(to_calculate[1]) result[1][s] = dist2_counter;
 		// for closeness centrality, value calculation 
-		#pragma omp task shared(result, queue, dist)
-		{
-			if(to_calculate[2]) {
-				int sum_of_dist = 0;
-				for(int &item: dist){
-					if(item != -1) sum_of_dist += item;
-				}
-				#pragma omp critical 
-				{
-					result[2][s] = (float) 1 / sum_of_dist;
-				}
+		if(to_calculate[2]) {
+			int sum_of_dist = 0;
+			for(int &item: dist){
+				if(item != -1) sum_of_dist += item;
+			}
+			#pragma omp critical 
+			{
+				result[2][s] = (float) 1 / sum_of_dist;
 			}
 		}
 
+		for(int i: queue) {
+			cout << i << " ";
+		}
+		cout << endl;
+
 		// if check for eliminating extra calculation if betweenness is not requested
-		#pragma omp task shared(result, queue, sigma, pred)
-		{
-			vector<float> delta(num_nodes, 0);		// dependency of s to index node
-			if(to_calculate[3]) {
-				for(int i = 0; i < queue.size(); i++) {
-					int w = queue[i];
-					for(int &v: pred[w]) {
-						# pragma omp critical
-						{
-							delta[v] += (float) ((float) sigma[v] / sigma[w]) * (1 + delta[w]);
-							if(w != s) result[3][w] += delta[w];
-						}
+		vector<float> delta(num_nodes, 0);		// dependency of s to index node
+		if(to_calculate[3]) {
+			for(int i = queue.size() - 1; i > 0; i--) {
+				int w = queue[i];				
+				for(int edge = row_ptr[w]; edge < row_ptr[w + 1]; edge++) {
+					int v = col_ind[edge];
+					if(dist[v] + 1 == dist[w]) {
+						delta[v] += (float) ((float) sigma[v] / sigma[w]) * (1 + delta[w]);
 					}
+				}
+				# pragma omp critical
+				{
+					cout << delta[w];
+					result[3][w] += delta[w];
 				}
 			}
 		}
-		#pragma omp taskwait
 	}
 }
 

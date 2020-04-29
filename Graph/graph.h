@@ -28,6 +28,8 @@ void get_filenames(vector<string> &filenames, const vector<string> &locations);
 // to perform all the computations at once
 void compute_centralities(const int &num_nodes, const vector<int> &row_ptr, const vector<int> &col_ind, 
                           vector<vector<float>> &result, const vector<bool> &to_calculate, int step_size=1000);
+void comp_cent(const int &num_nodes, const vector<int> &row_ptr, const vector<int> &col_ind, 
+                          vector<vector<float>> &result, const vector<bool> &to_calculate, int step_size=1000);
 void print_centralities(string filename, vector<vector<float>> &result);
 
 // bfs algorithm sequential implementation
