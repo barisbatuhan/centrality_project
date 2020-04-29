@@ -294,53 +294,6 @@ void degree2_centrality(int num_nodes, const vector<int> &row_ptr, const vector<
 	}
 }
 
-void betweenness_centrality(int num_nodes, const vector<int> &row_ptr, const vector<int> &col_ind, vector<pair<int, float>> &ordering, int size)
-{
-	queue<int> Q;
-	stack<int> S;
-	ordering = vector<pair<int, float>> (num_nodes, {0, 0});
-	for(int s = 0; s < num_nodes; s++) {
-		vector<int> dist(num_nodes, -1);
-		vector<vector<int>> pred(num_nodes);
-		vector<int> sigma(num_nodes, 0);
-		dist[s] = 0;
-		sigma[s] = 1;
-		Q.push(s);
-
-		while(!Q.empty()) {
-			int v = Q.front();
-			Q.pop();
-			S.push(v);
-			for(int edge = row_ptr[v]; edge < row_ptr[v + 1]; edge++) {
-				const int &w = col_ind[edge];
-				if(dist[w] < 0) {
-					dist[w] = dist[v] + 1;
-					Q.push(w);
-				}
-				if(dist[w] == dist[v] + 1) {		
-					sigma[w] = sigma[w] + sigma[v];
-					pred[w].push_back(v);
-				}
-			}
-		}
-
-		vector<float> delta(num_nodes, 0);
-		while(!S.empty()) {
-			int w = S.top();
-			S.pop();
-			for(int &v: pred[w]) {
-				cout << sigma[v] << " - " << sigma[w] << " - " << delta[w] << endl;
-				delta[v] += ((float) (sigma[v] / sigma[w])) * (1 + delta[w]);
-			}
-			if(w != s) {
-				ordering[w].first = w;
-				ordering[w].second += delta[w];
-			}
-		}
-		cout << "In the end!" << endl;
-	}
-}
-
 // for large scaled graphs, an approximating function of closeness centrality
 void closeness_centrality_approx(int num_nodes, const vector<int> &row_ptr, const vector<int> &col_ind, vector<pair<int, float>> &ordering, int size)
 {
