@@ -25,11 +25,11 @@ public:
     UGraph(int node_cnt, int edge_cnt); // random graph generation
 
     // centrality function
-    void compute_centralities(std::vector<std::vector<float>> &result, std::vector<bool> &requested);
+    void compute_centralities(std::vector<std::vector<float>> &result, const std::vector<bool> &requested);
     
     // centrality helper functions
     int bfs_topdown(std::vector<int> &dist, int source, std::vector<double> &sigma, std::vector<int> &queue,
-                    std::vector<int> &dist_counter, std::vector<bool> &requested, int &queue_size);
+                    std::vector<int> &dist_counter, const std::vector<bool> &requested, int &queue_size);
     float node_closeness(std::vector<int> &dist_counter, int max_dist);
     void node_betweenness(std::vector<std::vector<float>> &result, std::vector<int> &queue, 
                           std::vector<int> &dist, std::vector<double> &sigma, int &queue_size);
@@ -152,7 +152,7 @@ UGraph::UGraph(int node_cnt, int edge_cnt)
 /* CENTRALITY METHODS */
 
 int UGraph::bfs_topdown(std::vector<int> &dist, int source, std::vector<double> &sigma, std::vector<int> &queue,
-                        std::vector<int> &dist_counter, std::vector<bool> &requested, int &queue_size) 
+                        std::vector<int> &dist_counter, const std::vector<bool> &requested, int &queue_size) 
 {
     queue[0] = source;
     dist[source] = 0;
@@ -163,6 +163,7 @@ int UGraph::bfs_topdown(std::vector<int> &dist, int source, std::vector<double> 
 
     while(front < queue_size) {
         int &v = queue[front];
+        if(dist[v] == 2 && !requested[2] && !requested[3]) break;
         front++;
         for(int edge = row_ptr[v]; edge < row_ptr[v + 1]; edge++) {
             int &w = col_ind[edge];
@@ -173,7 +174,7 @@ int UGraph::bfs_topdown(std::vector<int> &dist, int source, std::vector<double> 
                 if(max_distance < dist[w]) max_distance = dist[w];
                 dist_counter[dist[w]]++;
             }
-            if(dist[w] == dist[v] + 1) {
+            if(requested[3] && dist[w] == dist[v] + 1) {
                 sigma[w] += sigma[v];
             }
         }
@@ -204,15 +205,13 @@ void UGraph::node_betweenness(std::vector<std::vector<float>> &result, std::vect
                 delta[v] += (float) (sigma[v] / sigma[w]) * (1 + delta[w]);
             }
         }
-        #pragma omp critical
-        {
-            result[3][w] += delta[w];
-        }
+        #pragma omp atomic
+        result[3][w] += delta[w];
     }
     return;
 }
 
-void UGraph::compute_centralities(std::vector<std::vector<float>> &result, std::vector<bool> &requested)
+void UGraph::compute_centralities(std::vector<std::vector<float>> &result, const std::vector<bool> &requested)
 {
     result = std::vector<std::vector<float>>(4, std::vector<float>(num_nodes, 0));
 
