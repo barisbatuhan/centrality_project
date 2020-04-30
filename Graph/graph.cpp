@@ -83,7 +83,143 @@ int read_graphs(string &fname, int &num_nodes, int &num_edges, vector<int> &row_
 	}
 	//cout << "nof nodes " << num_nodes << endl;
 	//cout << "nof edges " << num_edges << endl;
+    input.close();
 	return 0;
+}
+
+int read_adjecancy(string &fname, int &num_nodes, int &num_edges, vector<vector<int>> & adj_list){
+    adj_list.clear();
+    adj_list.resize(num_nodes);
+    ifstream input(fname.c_str());
+    if (input.fail())
+    {
+        return -1;
+    }
+    // read graph
+    string line = "%";
+    while (line.find("%") != string::npos)
+    {
+        getline(input, line);
+    }
+    istringstream ss(line);
+    ss >> num_nodes >> num_nodes >> num_edges;
+    int v1, v2;
+    double weight;
+
+    vector<int> renameArr(num_nodes, -1);
+    int counter = 0;
+    bool eliminateUnused = false;
+    for (int i = 0; i < num_edges; i++)
+    {
+        getline(input, line);
+        istringstream inp(line);
+        inp >> v1 >> v2;
+        v1--; // make it 0 based
+        v2--;
+
+        //for detecting vetices that are unused
+        if (renameArr[v1] == -1 && eliminateUnused)
+        {
+            renameArr[v1] = counter;
+            v1 = counter;
+            counter++;
+        }
+        else if (eliminateUnused)
+        {
+            v1 = renameArr[v1];
+        }
+        if (renameArr[v2] == -1 && eliminateUnused)
+        {
+            renameArr[v2] = counter;
+            v2 = counter;
+            counter++;
+        }
+        else if (eliminateUnused)
+        {
+            v2 = renameArr[v2];
+        }
+
+        if (v1 != v2)
+        {
+            adj_list[v1].push_back(v2); // add the edge v1->v2
+            adj_list[v2].push_back(v1); // add the edge v2->v1
+        }
+    }
+    input.close();
+    return 0;
+}
+
+
+bool isEdgeExist(vector<vector<int>> & adj_list, int & startNode, int & endNode){
+    for(int & neighbour: adj_list[startNode]){
+        if(neighbour==endNode)
+            return true;
+    }
+    return false;
+}
+
+vector<int> & getNeighbors(vector<vector<int>> & adjList, int & vertex){
+    return adjList[vertex];
+}
+
+void betweennessCentrality(vector<vector<int>> & adjList, vector<float> & centrality){
+    int vertexCount=adjList.size();
+    int x=0;
+    #pragma omp parallel for shared(centrality, vertexCount, adjList, x)
+    for(int i=0; i<vertexCount; i++){
+        /**
+         Inits
+         */
+        cout << x++ <<endl;
+        vector<vector<int>> predecessors(vertexCount);
+        vector<int> sPaths(vertexCount, 0);
+        vector<int> dist(vertexCount, -1);
+        vector<float> delta(vertexCount, 0.0);
+        queue<int> queue;
+        stack<int> stack;
+        sPaths[i]=1;
+        dist[i]=0;
+        queue.push(i);
+        /**
+         Finding shortest path
+         */
+        while(!queue.empty()){
+            int curr=queue.front();
+            queue.pop();
+            stack.push(curr);
+            for(int & n : getNeighbors(adjList, curr)){
+                if(dist[n]<0){
+                    queue.push(n);
+                    dist[n] = dist[curr]+1;
+                    sPaths[n] += sPaths[curr];
+                    predecessors[n].push_back(curr);
+                }
+                
+            }
+        }
+        
+        /**
+         Dependencies
+         */
+        unordered_set<int> uniqueIndexes;
+        while(!stack.empty()){
+            int curr = stack.top();
+            stack.pop();
+            for(int & pre : predecessors[curr]){
+                float ratio = 1.0*sPaths[pre]/sPaths[curr];
+                delta[pre]+=ratio * (1+delta[curr]);
+                uniqueIndexes.insert(pre);
+            }
+        }
+         for (auto it = uniqueIndexes.begin(); it != uniqueIndexes.end(); ++it ){
+            #pragma omp critical
+            {
+                centrality[*it]+=delta[*it];
+            }
+        }
+    }
+
+    
 }
 
 void get_filenames(vector<string> &filenames, const vector<string> &locations)
@@ -137,98 +273,99 @@ void print_centralities(string filename, vector<vector<float>> &result) {
  * 						  be calculated to approximate (for closeness and betweenness centralities)
  * 						  !!! NOT IMPLEMENTED YET !!!
  */
-void compute_centralities(const int &num_nodes, const vector<int> &row_ptr, const vector<int> &col_ind, 
-						  vector<vector<float>> &result, const vector<bool> &to_calculate, int step_size) {
-	
-	// initial input check
-	int num_centralities = 0;
-	if(to_calculate.size() != 4) {
-		printf("Error: correct number of calculation flags are not set!\n");
-		return;
-	}
-	for(int i = 0; i < 4; i++) {
-		if(to_calculate[i]) num_centralities++;
-	}
-	if(num_centralities == 0) {
-		printf("Error: none of the centrality calculations are set true!\n");
-		return;
-	}
-	// parameter initialization
-	result = vector<vector<float>>(4, vector<float>(num_nodes, 0));
+void compute_centralities(const int &num_nodes, const vector<int> &row_ptr, const vector<int> &col_ind,
+                          vector<vector<float>> &result, const vector<bool> &to_calculate, int step_size) {
+    
+    // initial input check
+    int num_centralities = 0;
+    if(to_calculate.size() != 4) {
+        printf("Error: correct number of calculation flags are not set!\n");
+        return;
+    }
+    for(int i = 0; i < 4; i++) {
+        if(to_calculate[i]) num_centralities++;
+    }
+    if(num_centralities == 0) {
+        printf("Error: none of the centrality calculations are set true!\n");
+        return;
+    }
+    // parameter initialization
+    result = vector<vector<float>>(4, vector<float>(num_nodes, 0));
+    int x=0;
+    #pragma omp parallel for shared(result, row_ptr, col_ind, to_calculate, x)
+    for(int s = 0; s < num_nodes; s++) {
+        cout << x++;
+        vector<int> queue;                         // non-increasing order of nodes to be read will be hold
+        queue.push_back(s);
+        int front = 0;                            // the index of last processed element will be hold
+        vector<int> dist(num_nodes, -1);         // distances of all nodes to node s
+        int dist2_counter = 0;                    // counts nodes with distances <= 2
+        vector<vector<int>> pred(num_nodes);    // for each node, its predecessors are held
+        vector<int> sigma(num_nodes, 0);        // number of shortest paths from s to the index
+        sigma[s] = 1;
+        
+        // for degree 1 centrality, value calculation
+        if(to_calculate[0]) result[0][s] = row_ptr[s + 1] - row_ptr[s];
+        // if check for eliminating extra calculation if only degree 1 is requested
+        if(!to_calculate[1] && !to_calculate[2] && !to_calculate[3]) continue;
 
-	#pragma omp parallel for shared(result, row_ptr, col_ind, to_calculate)
-	for(int s = 0; s < num_nodes; s++) {
-		vector<int> queue; 						// non-increasing order of nodes to be read will be hold
-		queue.push_back(s);
-		int front = 0;							// the index of last processed element will be hold
-		vector<int> dist(num_nodes, -1); 		// distances of all nodes to node s
-		int dist2_counter = 0;					// counts nodes with distances <= 2
-		vector<vector<int>> pred(num_nodes);	// for each node, its predecessors are held
-		vector<int> sigma(num_nodes, 0);		// number of shortest paths from s to the index
-		sigma[s] = 1;
-		
-		// for degree 1 centrality, value calculation
-		if(to_calculate[0]) result[0][s] = row_ptr[s + 1] - row_ptr[s];
-		// if check for eliminating extra calculation if only degree 1 is requested
-		if(!to_calculate[1] && !to_calculate[2] && !to_calculate[3]) continue;
+        while(front < queue.size()) {  // BFS Phase
+            int v = queue[front];
+            front++;
+            // if check for eliminating unnecessary computation if closeness and betweennes is not requested
+            if(dist[v] == 2 && !to_calculate[2] && !to_calculate[3]) break;
 
-		while(front < queue.size()) {  // BFS Phase
-			int v = queue[front];
-			front++;
-			// if check for eliminating unnecessary computation if closeness and betweennes is not requested
-			if(dist[v] == 2 && !to_calculate[2] && !to_calculate[3]) break;
+            for(int edge = row_ptr[v]; edge < row_ptr[v + 1]; edge++) {
+                int w = col_ind[edge];
+                // to calculate the distance of w to v
+                if(dist[w] < 0) {
+                    dist[w] = dist[v] + 1;
+                    if(dist[w] <= 2) dist2_counter++;
+                    queue.push_back(w);
+                }
+                // to see if edge (v, w) in the shortest path
+                if(to_calculate[3] && dist[w] == dist[v] + 1) {
+                    sigma[w] += sigma[v];
+                    pred[w].push_back(v);
+                }
+            }
+        }
+        // for degree 2 centrality, value calculation
+        if(to_calculate[1]) result[1][s] = dist2_counter;
+        // for closeness centrality, value calculation
+        #pragma omp task shared(result, queue, dist)
+        {
+            if(to_calculate[2]) {
+                int sum_of_dist = 0;
+                for(int &item: dist){
+                    if(item != -1) sum_of_dist += item;
+                }
+                #pragma omp critical
+                {
+                    result[2][s] = (float) 1 / sum_of_dist;
+                }
+            }
+        }
 
-			for(int edge = row_ptr[v]; edge < row_ptr[v + 1]; edge++) {
-				int w = col_ind[edge];
-				// to calculate the distance of w to v
-				if(dist[w] < 0) {
-					dist[w] = dist[v] + 1;
-					if(dist[w] <= 2) dist2_counter++;
-					queue.push_back(w);
-				}
-				// to see if edge (v, w) in the shortest path
-				if(to_calculate[3] && dist[w] == dist[v] + 1) {
-					sigma[w] += sigma[v];
-					pred[w].push_back(v);
-				}
-			}
-		}
-		// for degree 2 centrality, value calculation 
-		if(to_calculate[1]) result[1][s] = dist2_counter;
-		// for closeness centrality, value calculation 
-		#pragma omp task shared(result, queue, dist)
-		{
-			if(to_calculate[2]) {
-				int sum_of_dist = 0;
-				for(int &item: dist){
-					if(item != -1) sum_of_dist += item;
-				}
-				#pragma omp critical 
-				{
-					result[2][s] = (float) 1 / sum_of_dist;
-				}
-			}
-		}
-
-		// if check for eliminating extra calculation if betweenness is not requested
-		#pragma omp task shared(result, queue, sigma, pred)
-		{
-			vector<float> delta(num_nodes, 0);		// dependency of s to index node
-			if(to_calculate[3]) {
-				for(int i = 0; i < queue.size(); i++) {
-					int w = queue[i];
-					for(int &v: pred[w]) {
-						# pragma omp critical
-						{
-							delta[v] += (float) ((float) sigma[v] / sigma[w]) * (1 + delta[w]);
-							if(w != s) result[3][w] += delta[w];
-						}
-					}
-				}
-			}
-		}
-		#pragma omp taskwait
-	}
+        // if check for eliminating extra calculation if betweenness is not requested
+        #pragma omp task shared(result, queue, sigma, pred)
+        {
+            vector<float> delta(num_nodes, 0);        // dependency of s to index node
+            if(to_calculate[3]) {
+                for(int i = 0; i < queue.size(); i++) {
+                    int w = queue[i];
+                    for(int &v: pred[w]) {
+                        # pragma omp critical
+                        {
+                            delta[v] += (float) ((float) sigma[v] / sigma[w]) * (1 + delta[w]);
+                            if(w != s) result[3][w] += delta[w];
+                        }
+                    }
+                }
+            }
+        }
+        #pragma omp taskwait
+    }
 }
 
 void bfs(int start_node, int num_nodes, vector<int> row_ptr, vector<int> col_ind, vector<int> &distance_arr, int step_size)
