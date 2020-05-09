@@ -19,7 +19,34 @@ public:
     std::vector<int> col_ind;
     int num_nodes;
     int num_edges;
-
+    // getter
+    int getNumNodes(){
+        return num_nodes;
+    }
+    
+    int getNumEdges(){
+        return num_edges;
+    }
+    int getRowPtr(){
+        //allocates space
+        int * rowPtr = new int[row_ptr.size()];
+        int * itr = rowPtr;
+        for(auto &i : row_ptr){
+            *itr=i;
+            itr++;
+        }
+        return rowPtr;
+    }
+    int getColPtr(){
+        //allocates space
+        int * colPtr = new int[col_ind.size()];
+        int * itr = colPtr;
+        for(auto &i : col_ind){
+            *itr=i;
+            colPtr++;
+        }
+        return colPtr;
+    }
     // constructor
     UGraph(std::string fname);
     UGraph(int node_cnt, int edge_cnt); // random graph generation
