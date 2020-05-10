@@ -19,6 +19,8 @@ public:
     std::vector<int> col_ind;
     int num_nodes;
     int num_edges;
+    int * rowPtr;
+    int * colPtr;
     // getter
     int getNumNodes(){
         return num_nodes;
