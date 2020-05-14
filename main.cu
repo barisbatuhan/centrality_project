@@ -371,7 +371,7 @@ __global__ void betweenKernel(double * result, double * preq, UGraph * graph, in
                 if(vertex == iter){
                     //same
                     dist[vertex] = 0;
-                    sigma[vertex] = 1;
+                    sigma[vertex] = (double) 1 / (no_nodes * no_nodes);
                 }
                 else{
                     dist[vertex] = INF;
