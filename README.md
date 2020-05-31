@@ -4,23 +4,22 @@
 
 ## Authors
 
-- Barış Batuhan Topal: @barisbatuhan
+- [Barış Batuhan Topal](https://github.com/barisbatuhan)
 
-- Çağhan Köksal: @caghankoksal
+- [Çağhan Köksal](https://github.com/caghankoksal)
 
-- Furkan Ergün: @furkaneergun
+- [Furkan Ergün](https://github.com/furkaneergun)
 
-- Hakan Ogan Alpar: @oalpar
+- [Hakan Ogan Alpar](https://github.com/oalpar)
 
 ## Requirements
 
-- Cuda 10.0
-- GCC 5.3.0
+- CUDA 10.0
+- gcc 5.3.0
 
 ## Folders and Descriptions
 
 - **CPU:** Includes a coarse-grained parallelization implementation. Number of threads are set as stated in the `Makefile`. 
-
 - **GPU:** Includes a hybrid parallelization approach based on both coarse grained and fine grained parallelization levels. 
 
 For both implementations, the matrix file to run should be specified inside the main functions of the source codes. 
