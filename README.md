@@ -46,6 +46,23 @@ For both implementations, the matrix file to run should be specified inside the 
 
 *TO BE FILLED*
 
+| Methods | 494_bus.mtx | c-43.mtx | shuttle_eddy.mtx | wing_nodal.mtx | wave.mtx |
+| ------------- | ------------- | ------------- | ------------- | ------------- | ------------- |
+| Brandes's Algorithm | 0 | 0 | 0 | 0 | 0 |
+| CPU 1 Thread | 0 | 0 | 0 | 0 | 0 |
+| ------------- | ------------- | ------------- | ------------- | ------------- | ------------- |
+| CPU 2 Threads | 0 | 0 | 0 | 0 | 0 |
+| CPU 4 Threads | 0 | 0 | 0 | 0 | 0 |
+| CPU 8 Threads | 0 | 0 | 0 | 0 | 0 |
+| CPU 16 Threads | 0 | 0 | 0 | 0 | 0 |
+| CPU 32 Threads | 0 | 0 | 0 | 0 | 0 |
+| ------------- | ------------- | ------------- | ------------- | ------------- | ------------- |
+| Fine Grained GPU | 0 | 0 | 0 | 0 | 0 |
+| Edge Parallel GPU | 0 | 0 | 0 | 0 | 0 |
+| Vertex Parallel GPU | 0 | 0 | 0 | 0 | 0 |
+| Fine & Coarse Grained GPU | 0 | 0 | 0 | 0 | 0 |
+| Our GPU Implementation | 0 | 0 | 0 | 0 | 0 |
+
 ## Further Improvements
 
 *TO BE FILLED*
