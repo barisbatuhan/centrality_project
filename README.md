@@ -87,7 +87,7 @@ Measures the number of shortest paths between 2 different nodes (s and t), in wh
 
 In this project, several centrality measures are aimed to be calculated, while betweenness centrality is being measured.  Since the graphs are stored in the CSR form, degree one centrality can be easily calculated for each source node in O(1) time. However, for the other centrality measurements, BFS results for each vertex are needed. Our motivation is to use the results of the BFS algorithms for other centrality measurements, while calculating them for betweenness centrality. 
 
-While general formulas are implemented for calculating closeness, degree 1, and degree 2 centralities, [the Brandes’ algorithm](https://www.eecs.wsu.edu/~assefaw/CptS580-06/papers/brandes01centrality.pdf) is used for calculating betweenness centrality, since the Brandes’ algorithm provides a lower complexity O(mn) than the general naive approach which has O( N^3 ). The pseudocode for this algorithm is: 
+While general formulas are implemented for calculating closeness, degree 1, and degree 2 centralities, [the Brandes’ algorithm](https://www.eecs.wsu.edu/~assefaw/CptS580-06/papers/brandes01centrality.pdf) is used for calculating betweenness centrality, since the Brandes’ algorithm provides a lower complexity O(|E| * |V|) than the general naive approach which has O(N^3). The pseudocode for this algorithm is: 
 
 ![Brandes Betweenness Centrality](images/brandes_bc.png)
 
