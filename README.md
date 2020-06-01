@@ -89,7 +89,14 @@ Measures the number of shortest paths between 2 different nodes (s and t), in wh
 
 ### GPU Level Parallelization
 
-*TO BE FILLED*
+For the GPU parallelization phase, our previous code designed for coarse-grained CPU parallelization was not suitable, since that structure includes a queue logic that has to be synchronized. Therefore, an implementation without any queue logic and with the least amount of synchronization and atomic operations is aimed. 
+
+In the literature, there are some approaches [(Sarıyüce et. al., 2015)](https://www.sciencedirect.com/science/article/abs/pii/S0743731514001282?via%3Dihub) which succeeds to apply both coarse and fine-grained levels of parallelization to betweenness centrality. Thus, we have also designed a method, which benefits from both levels. As suggested in [a GitHub repository implementing betweenness centrality](https://github.com/pvgupta24/Graph-Betweenness-Centrality), each GPU block in our code is responsible for the calculation of centrality measurements of one source vector at a time, while every single thread in a block runs a part of inner processes for each source node.  In other words, with each block, a coarse-grained design is accomplished and with every thread group per block, fine-grained parallelization is succeeded. Pseudocode for our implementation can be reached below:
+
+![GPU Parallel Centrality Measurement Kernel](images/gpu_code.png)
+
+For simplicity, dist & sigma & delta arrays are shown as they are created for each source vertex again. However, in the actual implementation, they are created at once for every single block running at the same time. 
+
 
 ## Results & Discussion
 
