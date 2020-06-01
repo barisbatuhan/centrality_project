@@ -1,6 +1,6 @@
-# Centrality Project
+# CPU and GPU Parallelization on Graph Centrality Measures
 
-**Description:** CS 406 Project for Parallelizing Centrality Measurements: Degree 1&amp;2, Closeness and Betweenness Centralities
+**Description:** A Project for Parallelizing Centrality Measurements: Degree 1&amp;2, Closeness and Betweenness Centralities
 
 ## Authors
 
@@ -166,6 +166,12 @@ Since there is no work calculating all of these 4 centrality measurements at the
 | ***Fine Grained GPU*** | 0.354 s | 258.352 s | 79.210 s | - |
 | ***Fine & Coarse Grained GPU*** | 0.061 s | 17.081 s | 5.448 s | 1482.232 s |
 | **Our GPU Implementation** | 0.036 s | 25.807 s | 20.890 s | 3938.688 s |
+
+**Note:** All of the methods listed in the table are tested on the same HPC cluster mentioned in the *Requirements* section.
+
+A comparison of the speedups of some of the methods given above:
+
+![Speedups](images/speedup.png)
 
 ### CPU
 
