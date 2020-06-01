@@ -116,7 +116,7 @@ Since there is no work calculating all of these 4 centrality measurements at the
 | ***Vertex Parallel GPU*** | 0.281 s | 222.499 s | 128.733 s | - |
 | ***Fine Grained GPU*** | 0.354 s | 258.352 s | 79.210 s | - |
 | ***Fine & Coarse Grained GPU*** | 0.061 s | 17.081 s | 5.448 s | 1482.232 s |
-| **Our GPU Implementation** | 0.036 s | 25.807 s | 20.890 s | - |
+| **Our GPU Implementation** | 0.036 s | 25.807 s | 20.890 s | 3938.688 s |
 
 *TO BE FILLED*
 
