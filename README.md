@@ -104,8 +104,8 @@ Since there is no work calculating all of these 4 centrality measurements at the
 
 | **Methods** | **494_bus.mtx** | **c-43.mtx** | **wing_nodal.mtx** | **wave.mtx** |
 | :--- | ---: | ---: | ---: | ---: |
-| ***Brandes without Optimization*** | 0.06 s | 57.550 s | 66.500 s | - |
-| ***Brandes with -O3*** | 0.01 s | 11.370 s | 20.770 s | 4915.840 s |
+| ***Brandes without Optimization*** | 0.060 s | 57.550 s | 66.500 s | - |
+| ***Brandes with -O3*** | 0.010 s | 11.370 s | 20.770 s | 4915.840 s |
 | **CPU 1 Thread** | 0.013 s | 9.882 s | 25.568 s | 4578.670 s |
 | **CPU 2 Threads** | 0.011 s | 5.240 s | 13.867 s | 2343.540 s |
 | **CPU 4 Threads** | 0.012 s | 2.927 s | 7.812 s | 1198.080 s |
@@ -122,7 +122,11 @@ Since there is no work calculating all of these 4 centrality measurements at the
 
 ## Further Improvements
 
-*TO BE FILLED*
+In our current implementation, only one GPU is used to calculate a solution to the problem. Therefore the GPU code is not fit to be used by multiple GPUs. In the future, code can be altered to work on multiple GPUs and be more efficient. 
+
+Also currently, our centrality computation exploits a vertex-based parallelization. There is a more efficient way to parallelize these centrality measures called [virtual-vertex-based parallelization](https://www.sciencedirect.com/science/article/abs/pii/S0743731514001282?via%3Dihub). Latter method can be exploited in the future to speed up. Furthermore, we are using a bottom-up approach on our BFS parallelization, yet there are hybrid algorithms that combine the bottom-up approach and top-down approach to abuse the efficiency of both algorithms. In the future, a hybrid BFS algorithm can be implemented. 
+
+Finally, we have two different implementations for centrality measures, one on the GPU and one on the CPU, in the future these two implementations can be combined to calculate the result for our problem more efficiently.
 
 
 
