@@ -104,7 +104,7 @@ Since there is no work calculating all of these 4 centrality measurements at the
 
 | **Methods** | **494_bus.mtx** | **c-43.mtx** | **wing_nodal.mtx** | **wave.mtx** |
 | :--- | :---: | :---: | :---: | :---: |
-| ***Brandes without Optimization*** | - | - | - | - |
+| ***Brandes without Optimization*** | 60 ms | 57550 ms | 66500 ms | - |
 | ***Brandes with -O3*** | 10 ms | 11370 ms | 20770 ms | 4915840 ms |
 | **CPU 1 Thread** | 13.28 ms | 9881.95 ms | 25568.1 ms | 4578670 ms |
 | **CPU 2 Threads** | 11.09 ms | 5240.38 ms | 13867.5 ms | 2343540 ms |
