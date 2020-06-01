@@ -103,20 +103,20 @@ To measure our performance, four graphs with different sizes are being used, whi
 Since there is no work calculating all of these 4 centrality measurements at the same time, our results are compared with a [betweenness centrality implementation having CUDA GPU parallelization](https://github.com/pvgupta24/Graph-Betweenness-Centrality), since betweenness centrality is the most time consuming measurement among all these selected. The implementation we have chosen for comparison is directly implementing the [methods presented by NVIDIA](https://devblogs.nvidia.com/accelerating-graph-betweenness-centrality-cuda/). Our results are stated below (The ones stated with italic fonts are from the repository we have used for comparison):
 
 | **Methods** | **494_bus.mtx** | **c-43.mtx** | **wing_nodal.mtx** | **wave.mtx** |
-| :--- | :---: | :---: | :---: | :---: |
-| ***Brandes without Optimization*** | 60 ms | 57550 ms | 66500 ms | - |
-| ***Brandes with -O3*** | 10 ms | 11370 ms | 20770 ms | 4915840 ms |
-| **CPU 1 Thread** | 13.28 ms | 9881.95 ms | 25568.1 ms | 4578670 ms |
-| **CPU 2 Threads** | 11.09 ms | 5240.38 ms | 13867.5 ms | 2343540 ms |
-| **CPU 4 Threads** | 12.36 ms | 2927.2 ms | 7811.51 ms | 1198080 ms |
-| **CPU 8 Threads** | 10 ms | 1639.76 ms | 4105 ms | 631664 ms |
-| **CPU 16 Threads** | 9.88 ms | 926.6 ms | 2154.19 ms | 332555 ms |
-| **CPU 32 Threads** | 8.78 ms | 525 ms | 1129.09 ms | 164977 ms |
-| ***Edge Parallel GPU*** | 112 ms | 22757 ms | 99278 ms | - |
-| ***Vertex Parallel GPU*** | 281 ms | 222499 ms | 128733 ms | - |
-| ***Fine Grained GPU*** | 354 ms | 258352 ms | 79210 ms | - |
-| ***Fine & Coarse Grained GPU*** | 61 ms | 17081 ms | 5448 ms | 1482232 ms |
-| **Our GPU Implementation** | 16.55 ms | 20304.05 ms | 10377.41 ms | - |
+| :--- | ---: | ---: | ---: | ---: |
+| ***Brandes without Optimization*** | 0.06 s | 57.550 s | 66.500 s | - |
+| ***Brandes with -O3*** | 0.01 s | 11.370 s | 20.770 s | 4915.840 s |
+| **CPU 1 Thread** | 0.013 s | 9.882 s | 25.568 s | 4578.670 s |
+| **CPU 2 Threads** | 0.011 s | 5.240 s | 13.867 s | 2343.540 s |
+| **CPU 4 Threads** | 0.012 s | 2.927 s | 7.812 s | 1198.080 s |
+| **CPU 8 Threads** | 0.010 s | 1.640 s | 4.105 s | 631.664 s |
+| **CPU 16 Threads** | 0.009 s | 0.926 s | 2.154 s | 332.555 s |
+| **CPU 32 Threads** | 0.008 s | 0.525 s | 1.129 s | 164.977 s |
+| ***Edge Parallel GPU*** | 0.112 s | 22.757 s | 99.278 s | - |
+| ***Vertex Parallel GPU*** | 0.281 s | 222.499 s | 128.733 s | - |
+| ***Fine Grained GPU*** | 0.354 s | 258.352 s | 79.210 s | - |
+| ***Fine & Coarse Grained GPU*** | 0.061 s | 17.081 s | 5.448 s | 1482.232 s |
+| **Our GPU Implementation** | 0.036 s | 25.807 s | 20.890 s | - |
 
 *TO BE FILLED*
 

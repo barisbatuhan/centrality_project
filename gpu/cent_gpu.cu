@@ -73,64 +73,67 @@ void cent_kernel(float *results, int *dist, int *sigma, float *delta, int *rp, i
     
     __shared__ int level;
     __shared__ int improved;
-    for(int s = blockIdx.x; s < n; s += gridDim.x) {
+    for(int s = blockIdx.x; s < n; s += gridDim.x) {    
         if(threadIdx.x == 0) {
 	        results[s] = rp[s + 1] - rp[s]; // degree 1
 	        level = 0;
 	        improved = 1;
-                dist[s * n + s] = 0;
-                sigma[s * n + s] = 1;
+            dist[blockIdx.x * n + s] = 0;
+            sigma[blockIdx.x * n + s] = 1;
 	    }
 	    __syncthreads();
-        
-	    // BFS
+	
+        // BFS
         while(improved == 1) {
             if(threadIdx.x == 0) improved = 0;
             for(int node = threadIdx.x; node < n; node += blockDim.x) {
                 for(int edge = rp[node]; edge < rp[node + 1]; edge++) {
-                    int adj = ci[edge];
-                    if(dist[(s * n) + adj] == level && dist[(s * n) + node] == -1) {
-                        dist[(s * n) + node] = level + 1;
+                    int &adj = ci[edge];
+                    if(dist[(blockIdx.x * n) + adj] == level && dist[(blockIdx.x * n) + node] == -1) {
+                        dist[(blockIdx.x * n) + node] = level + 1;
                         improved = 1;
                     }
-                    if(dist[(s * n) + adj] == level && dist[(s * n) + node] == level + 1) {
-                        sigma[(s * n) + node] += (float) sigma[(s * n) + adj];
+                    if(dist[(blockIdx.x * n) + adj] == level && dist[(blockIdx.x * n) + node] == level + 1) {
+                        sigma[(blockIdx.x * n) + node] += (float) sigma[(blockIdx.x * n) + adj];
                     }
                 }
             }
             if(threadIdx.x == 0) level++;
             __syncthreads();
         }
-
         int dist_sum = 0;
         int dist2_cnt = 0;
 
         // DISTANCE ADDER
         if(threadIdx.x == 0) {
             for(int i = 0; i < n; i++) {
-                if(dist[(s * n) + i] > 0) {
-                    if(dist[(s * n) + i] <= 2) dist2_cnt++;
-                    dist_sum += dist[(s * n) + i];
+                if(dist[(blockIdx.x * n) + i] > 0) {
+                    if(dist[(blockIdx.x * n) + i] <= 2) dist2_cnt++;
+                    dist_sum += dist[(blockIdx.x * n) + i];
                 }
             }
             results[n + s] = dist2_cnt; // degree 2
             results[2 * n + s] = (float) n / dist_sum; // closeness cent.
         }
-
 	    while(level > 0) {
 	        for(int node = threadIdx.x; node < n; node += blockDim.x) {
-                if(dist[s * n + node] == level){
+                if(dist[blockIdx.x * n + node] == level){
                     for(int edge = rp[node]; edge < rp[node + 1]; edge++) {
                         int adj = ci[edge];
-                        if(dist[(s * n) + adj] + 1 == dist[(s * n) + node]) {
-                            atomicAdd(&delta[(s * n) + adj], (sigma[(s * n) + adj] * 1.0) / sigma[(s * n) + node] * (1 + delta[(s * n) + node]));
+                        if(dist[(blockIdx.x * n) + adj] + 1 == dist[(blockIdx.x * n) + node]) {
+                            atomicAdd(&delta[(blockIdx.x * n) + adj], (sigma[(blockIdx.x * n) + adj] * 1.0) / sigma[(blockIdx.x * n) + node] * (1 + delta[(blockIdx.x * n) + node]));
                         }
                     }
-                    atomicAdd(&results[3 * n + node], delta[(s * n) + node] / 2);
+                    atomicAdd(&results[3 * n + node], delta[(blockIdx.x * n) + node] / 2);
                 }
             }
             if(threadIdx.x == 0) level--;
-            __syncthreads();
+	        __syncthreads();
+	    }
+        for(int i = 0; i < n; i++) {
+	        dist[(blockIdx.x * n) + i] = -1;
+	        sigma[(blockIdx.x * n) + i] = 0;
+	        delta[(blockIdx.x * n) + i] = 0;
 	    }
     }
 }
@@ -154,7 +157,6 @@ float* compute_centralities(int *rp, int *ci, int n, float &time_taken) {
     cudaEventCreate(&start);
     cudaEventCreate(&end);
     cudaEventRecord(start);
-
     cent_kernel<<<BLOCK_COUNT, THREAD_COUNT>>>(d_results, dist, sigma, delta, rp, ci, n);
     cudaDeviceSynchronize();
     
@@ -179,8 +181,7 @@ float* compute_centralities(int *rp, int *ci, int n, float &time_taken) {
 int main()
 {
     cudaSetDevice(0);
-
-    std::string filename = "../data/wing_nodal.mtx";
+    std::string filename = "../data/wave.mtx";
     int *row_ptr, *col_ind;
     int num_nodes, num_edges;
     read_graph(filename, row_ptr, col_ind, num_nodes, num_edges);
