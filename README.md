@@ -83,9 +83,38 @@ Measures the number of shortest paths between 2 different nodes (s and t), in wh
 
 ![Betweenness Centrality Equation](images/bc_formula.png)
 
+### Construction of the First Algorithm
+
+In this project, several centrality measures are aimed to be calculated, while betweenness centrality is being measured.  Since the graphs are stored in the CSR form, degree one centrality can be easily calculated for each source node in O(1) time. However, for the other centrality measurements, BFS results for each vertex are needed. Our motivation is to use the results of the BFS algorithms for other centrality measurements, while calculating them for betweenness centrality. 
+
+While general formulas are implemented for calculating closeness, degree 1, and degree 2 centralities, [the Brandes’ algorithm](https://www.eecs.wsu.edu/~assefaw/CptS580-06/papers/brandes01centrality.pdf) is used for calculating betweenness centrality, since the Brandes’ algorithm provides a lower complexity O(mn) than the general naive approach which has O( N^3 ). The pseudocode for this algorithm is: 
+
+![Brandes Betweenness Centrality](images/brandes_bc.png)
+
+In the Brandes algorithm, creation of the predecessor array and 2 different parameters as queue and stack causes unnecessary memory writing and deleting operations. Only one array Q is created for both queueing and stacking processes and instead of the predecessor array, distance check of the neighbors of each node in Q is preferred in the betweenness step.  To decrease the total execution time, changing sizes of the vectors is avoided. In the C++ implementation, all vector parameters are initialized with a predetermined size and their sizes are not updated during the whole process. 
+As mentioned before all other centrality measures can be calculated using the intermediate results to calculate the betweenness centrality because all of them rely on BFS and CSR graph representation. This results in the following code structure: Calculate degree one centrality by looking at the row indices of the graph, then running BFS, and using the result to calculate degree two, closeness, and betweenness centralities.
+
+![CPU Code General Flow](images/cpu_all.png)
+
+For BFS a top-down approach is used because of its ease of implementation. A variable dist_counter is used to calculate the degree two centrality while 2 more parameters are passed to the BFS function, namely Q and sigma. While Q holds the visited order of nodes with non-decreasing distance values, sigma holds the number of shortest paths from the source vertex to another selected vertex. BFS implementation is as follows:
+
+![CPU BFS](images/cpu_bfs.png)
+
+Closeness centrality is also implemented as stated below. Since the number of vertices for each single distance is calculated beforehand, the complexity for calculating closeness values is decreased from O(n) to O(max_distance).
+ 
+![CPU Closeness Centrality per Source Vertex](images/cpu_cc.png)
+
+For betweenness, the approach of Brandes is followed. For each vertex in Q, an addition to the result is made. Since the calculation runs in parallel, this update is made atomically.
+
+![CPU Betweenness Centrality per Source Vertex](images/cpu_bc.png)
+
+
 ### CPU Level Parallelization
 
-*TO BE FILLED*
+In order to calculate the betweenness centrality of each vertex in the graph, we need to apply the BFS algorithm to calculate the sigma and delta values of the corresponding vertex. Since all the computations BFS iterations for each source vertex are independent of each other, we have used coarse-grained parallelism by assigning each BFS iterations for each source to available threads.  By using this approach, Decreasing communication and synchronization overhead between threads is aimed. Moreover, even though a coarse-grained approach may cause workload imbalance between threads; in our approach since each thread will visit an equal number of nodes, the amount of work required for each thread is rather balanced. In addition to that, coarse-grained parallelism has physical memory constraints with the increasing number of threads. However, the physical memory problem is not confronted with any of the graphs that have been tested.
+
+Also, we have tried fine-grained parallelism focusing on parallelizing processes for every single source vertex calculation. However, run-times that we have achieved are much worse than the coarse-grained approach; therefore, the coarse-grained approach is chosen as a parallelism approach.
+
 
 ### GPU Level Parallelization
 
@@ -95,8 +124,21 @@ In the literature, there are some approaches [(Sarıyüce et. al., 2015)](https:
 
 ![GPU Parallel Centrality Measurement Kernel](images/gpu_code.png)
 
-For simplicity, dist & sigma & delta arrays are shown as they are created for each source vertex again. However, in the actual implementation, they are created at once for every single block running at the same time. 
+For simplicity, dist, sigma, and delta arrays are shown as they are created for each source vertex again. However, in the actual implementation, they are created at once for every single block running at the same time. 
 
+The general algorithm can be summarized in 3 different parts:
+
+#### BFS
+
+In order to be freed from the queue structure previously used in the CPU code and to prevent write operations for each thread to the same location, a bottom-up BFS is chosen to be implemented. Each thread in the same block corresponds to a node (or group of nodes depending on the size of the graph given) and these nodes’ predecessors having a specific distance level are searched at each depth. After finding the predecessors, the sigma and distance values of the nodes are updated regarding the previous distance values of nodes. At the end of each loop, the level value is increased and the threads are synchronized.
+
+#### Calculation of Closeness and Distance 2 Centralities
+
+After BFS, each of the distance array values is traversed. By adding all the distances the closeness centrality value, and by counting nodes having a distance smaller than or equal to 2 the distance 2 centrality value is calculated for the selected source vertex.
+
+#### Reverse Traverse
+
+A similar fine-grained approach to BFS is also used for this step. Each thread in the same block corresponds to a node (or group of nodes depending on the size of the graph given) and starting from the nodes having the most distance level, delta, and betweenness centrality of the vertices are updated. At the end of each loop, the threads are synchronized and the level value is decreased by one until its value becomes zero.
 
 ## Results & Discussion
 
@@ -125,7 +167,16 @@ Since there is no work calculating all of these 4 centrality measurements at the
 | ***Fine & Coarse Grained GPU*** | 0.061 s | 17.081 s | 5.448 s | 1482.232 s |
 | **Our GPU Implementation** | 0.036 s | 25.807 s | 20.890 s | 3938.688 s |
 
-*TO BE FILLED*
+### CPU
+
+As far as CPU parallelization is considered, our algorithm has almost linear speed up on medium and large graphs whereas, on small graphs, speed up stays sub-linear. While calculating betweenness centrality, at each iteration threads update the result vector, which is shared among all threads. In order to avoid mutual exclusion, updates occur in an atomic manner and since the number of nodes in small graphs are fewer, updates occur more frequently and threads wait for each other which prohibits expected speed-up on small graphs. Likewise, because of the mutual exclusion, efficiency also decreases, if the size of the graph also decreases.
+Furthermore, it should be noted that CPU implementation shows strong scaling as the coarse-grained approach is implemented.
+
+### GPU
+
+For the GPU parallelization, as mentioned before, the code is compared against a GitHub repository that implements NVIDIA’s methods. As the results above demonstrate, the GPU implementation runs faster than Edge Parallel GPU, Vertex Parallel GPU, Fine-Grained GPU implementations. The approach fails only against Fine & Coarse-Grained GPU implementation in larger graphs that have more than approximately 104 nodes. It should also be noted that our GPU implementation also follows a coarse-grained manner in order to achieve strong scaling. Furthermore, it is clear both the implementation does not perform any better than CPU parallelization. Therefore, it may be argued that the  problem does not suit GPU parallelization as better as CPU parallelization as it requires a lot of synchronization. 
+
+It should also be noted that the approach calculates the Degree Centrality, Degree 2 Centrality and Closeness Centrality along the way of calculating the Betweenness Centrality. In other words, the speed up also contains the other three centrality metrics as an extra.
 
 ## Further Improvements
 
