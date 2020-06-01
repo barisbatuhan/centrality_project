@@ -122,7 +122,7 @@ void cent_kernel(float *results, int *dist, int *sigma, float *delta, int *rp, i
                 if(dist[s * n + node] == level){
                     for(int edge = rp[node]; edge < rp[node + 1]; edge++) {
                         int adj = ci[edge];
-                        if(dist[(s * n) + adj] + 1 == dist[(s * n) + node]) {
+                        if(dist[(s * n) + adj] + 1 == dist[(s * n) + node] && sigma[(s * n) + node] > 0) {
                             atomicAdd(&delta[(s * n) + adj], (sigma[(s * n) + adj] * 1.0) / sigma[(s * n) + node] * (1 + delta[(s * n) + node]));
                         }
                     }
